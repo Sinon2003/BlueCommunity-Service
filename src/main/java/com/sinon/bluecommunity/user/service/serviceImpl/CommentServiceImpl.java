@@ -5,6 +5,7 @@ import com.sinon.bluecommunity.common.exception.BusinessException;
 import com.sinon.bluecommunity.common.utils.RedisUtils;
 import com.sinon.bluecommunity.common.vo.CommentVO;
 import com.sinon.bluecommunity.user.mapper.CommentMapper;
+import com.sinon.bluecommunity.user.mapper.TopicMapper;
 import com.sinon.bluecommunity.user.service.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private CommentMapper commentMapper;
+
+    @Autowired
+    private TopicMapper topicMapper;
 
     @Autowired
     private RedisUtils redisUtils;
@@ -58,6 +62,10 @@ public class CommentServiceImpl implements CommentService {
         comment.setLevel(1); // 设置为一级评论
 
         commentMapper.insert(comment);
+
+        // 更新对应话题的评论数量
+        topicMapper.updateComments(targetId, 1);
+
         return comment;
     }
 

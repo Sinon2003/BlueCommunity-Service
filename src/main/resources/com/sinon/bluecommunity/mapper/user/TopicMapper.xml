@@ -199,4 +199,55 @@
         </foreach>
     </update>
 
+    <!-- 查询热门帖子 -->
+    <select id="selectHotTopics" resultType="com.sinon.bluecommunity.common.entity.Topic">
+        SELECT *
+        FROM topics
+        <where>
+            status = 1 <!-- 只查询正常状态的帖子 -->
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="days != null and days > 0">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+            </if>
+        </where>
+        <choose>
+            <!-- 综合热度，使用加权公式：浏览量×0.2 + 点赞数×0.4 + 评论数×0.4 -->
+            <when test="hotType == 'comprehensive'">
+                ORDER BY (views * 0.2 + likes * 0.4 + comments * 0.4) DESC
+            </when>
+            <when test="hotType == 'views'">
+                ORDER BY views DESC
+            </when>
+            <when test="hotType == 'likes'">
+                ORDER BY likes DESC
+            </when>
+            <when test="hotType == 'comments'">
+                ORDER BY comments DESC
+            </when>
+            <otherwise>
+                <!-- 默认综合热度 -->
+                ORDER BY (views * 0.2 + likes * 0.4 + comments * 0.4) DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+    
+    <!-- 统计符合条件的热门帖子总数 -->
+    <select id="countHotTopics" resultType="long">
+        SELECT COUNT(*)
+        FROM topics
+        <where>
+            status = 1 <!-- 只查询正常状态的帖子 -->
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="days != null and days > 0">
+                AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+            </if>
+        </where>
+    </select>
 </mapper>

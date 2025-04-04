@@ -22,6 +22,10 @@ public class WebConfig implements WebMvcConfigurer {
                         "/public/**",            // 放行公共资源
                         "/api/topics/list",      // 放行话题接口
                         "/api/categories/detail",  // 放行分类详情
+
+                        "/api/topics/hot",   // 测试及接口
+
+
                         "/api/categories/list",  // 获取分类列表
                         "/swagger-ui.html",      // 放行swagger
                         "/swagger-resources/**", // 放行swagger

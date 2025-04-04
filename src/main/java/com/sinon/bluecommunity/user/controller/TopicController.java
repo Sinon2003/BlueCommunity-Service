@@ -160,4 +160,19 @@ public class TopicController {
         TopicVO.CategoryTopicStats stats = topicService.getCategoryTopicStats(categoryId);
         return Result.success(stats);
     }
+    
+    /**
+     * 获取热门话题列表
+     * 支持按分类筛选，按时间范围筛选，以及不同的热度计算方式
+     */
+    @GetMapping("/hot")
+    public Result<PageVO<TopicVO>> getHotTopics(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Integer days,
+            @RequestParam(required = false) String hotType,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageVO<TopicVO> topics = topicService.getHotTopics(categoryId, days, hotType, page, size);
+        return Result.success(topics);
+    }
 }

@@ -108,4 +108,32 @@ public interface TopicMapper {
      */
     @Select("SELECT COUNT(*) FROM topics WHERE user_id = #{userId} AND status != -1")
     Integer countByUserId(@Param("userId") Long userId);
+    
+    /**
+     * 查询热门帖子
+     * 
+     * @param categoryId 可选的分类ID
+     * @param days 统计的时间范围，如近7天、30天
+     * @param hotType 热门类型: "comprehensive"(综合), "views"(浏览量), "likes"(点赞), "comments"(评论)
+     * @param offset 分页偏移量
+     * @param size 分页大小
+     * @return 热门帖子列表
+     */
+    List<Topic> selectHotTopics(
+        @Param("categoryId") Long categoryId,
+        @Param("days") Integer days,
+        @Param("hotType") String hotType,
+        @Param("offset") Integer offset,
+        @Param("size") Integer size);
+        
+    /**
+     * 统计符合条件的热门帖子总数
+     * 
+     * @param categoryId 可选的分类ID
+     * @param days 统计的时间范围，如近7天、30天
+     * @return 总数
+     */
+    long countHotTopics(
+        @Param("categoryId") Long categoryId,
+        @Param("days") Integer days);
 }

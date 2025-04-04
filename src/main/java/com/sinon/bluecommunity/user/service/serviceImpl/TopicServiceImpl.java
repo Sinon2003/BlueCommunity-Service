@@ -168,6 +168,10 @@ public class TopicServiceImpl implements TopicService {
         }
         
         try {
+
+            // 增加一个浏览量
+            topicMapper.incrementViews(id);
+
             // 获取话题信息
             Topic topic = topicMapper.selectById(id);
             if (topic == null) {
@@ -522,6 +526,106 @@ public class TopicServiceImpl implements TopicService {
         } catch (Exception e) {
             log.error("获取分类话题统计失败", e);
             throw new BusinessException("获取分类话题统计失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取热门话题列表
+     * 支持按分类筛选、时间范围限定以及多种热度类型
+     */
+    @Override
+    public PageVO<TopicVO> getHotTopics(Long categoryId, Integer days, String hotType, Integer page, Integer size) {
+        // 默认值处理
+        if (page == null || page < 1) {
+            page = 1;
+        }
+        if (size == null || size < 1) {
+            size = 10;
+        }
+        if (days == null) {
+            days = 7; // 默认获取7天内的热门帖子
+        }
+        if (hotType == null || hotType.isEmpty()) {
+            hotType = "comprehensive"; // 默认使用综合热度
+        }
+        
+        try {
+            // 计算偏移量
+            int offset = (page - 1) * size;
+            
+            // 获取总记录数
+            long total = topicMapper.countHotTopics(categoryId, days);
+            
+            // 如果没有记录，直接返回空列表
+            if (total == 0) {
+                return new PageVO<>(new ArrayList<>(), 0L);
+            }
+            
+            // 从数据库获取热门话题
+            List<Topic> topics = topicMapper.selectHotTopics(categoryId, days, hotType, offset, size);
+            
+            // 转换为VO对象
+            List<TopicVO> topicVOList = new ArrayList<>();
+            if (!CollectionUtils.isEmpty(topics)) {
+                // 收集所有作者ID
+                List<Long> userIds = topics.stream()
+                    .map(Topic::getUserId)
+                    .distinct()
+                    .collect(Collectors.toList());
+                
+                // 创建用户ID和用户信息的映射
+                Map<Long, User> userMap = new HashMap<>();
+                
+                // 只有当有用户ID时才执行批量查询
+                if (!CollectionUtils.isEmpty(userIds)) {
+                    try {
+                        // 批量查询作者信息
+                        List<User> users = userMapper.selectByIds(userIds);
+                        if (!CollectionUtils.isEmpty(users)) {
+                            userMap = users.stream()
+                                .collect(Collectors.toMap(
+                                    User::getId, 
+                                    user -> user, 
+                                    (existing, replacement) -> existing
+                                ));
+                        }
+                    } catch (Exception e) {
+                        log.error("批量查询用户信息失败", e);
+                        // 这里只记录日志，不抛出异常，避免因为用户信息查询失败影响整个热门话题列表
+                    }
+                }
+                
+                // 构建VO对象
+                for (Topic topic : topics) {
+                    TopicVO vo = new TopicVO();
+                    BeanUtils.copyProperties(topic, vo);
+                    
+                    // 设置作者信息
+                    User author = userMap.get(topic.getUserId());
+                    if (author != null) {
+                        vo.setAuthor(author);
+                    } else {
+                        // 如果没有找到作者信息，设置默认值
+                        User unknownUser = new User();
+                        unknownUser.setId(topic.getUserId());
+                        unknownUser.setUsername("unknown");
+                        unknownUser.setNickname("未知用户");
+                        vo.setAuthor(unknownUser);
+                    }
+                    
+                    topicVOList.add(vo);
+                }
+            }
+            
+            // 封装分页数据
+            PageVO<TopicVO> pageVO = new PageVO<>(topicVOList, total);
+            // 设置是否有更多数据
+            pageVO.setHasMore(size, page);
+            
+            return pageVO;
+        } catch (Exception e) {
+            log.error("获取热门话题列表失败", e);
+            throw new BusinessException("获取热门话题列表失败：" + e.getMessage());
         }
     }
 }
