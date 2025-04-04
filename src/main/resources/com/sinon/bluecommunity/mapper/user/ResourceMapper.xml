@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.ResourceMapper">
+
+    <sql id="Base_Column_List">
+        r.id, r.user_id, r.title, r.type, r.url_type, r.resource_url, r.description, r.content,
+        r.cover_url, r.downloads, r.views, r.likes, r.status, r.created_at, r.updated_at,
+        u.username
+    </sql>
+
+    <!-- 公共的查询条件 -->
+    <sql id="Common_Where_Clause">
+        <where>
+            <if test="userId != null">
+                AND r.user_id = #{userId}
+            </if>
+            <if test="type != null and type != ''">
+                AND r.type = #{type}
+            </if>
+            <if test="status != null">
+                AND r.status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    r.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR r.description LIKE CONCAT('%', #{keyword}, '%')
+                    OR r.content LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <!-- 获取资源列表 -->
+    <select id="getResourceList" resultType="com.sinon.bluecommunity.common.entity.Resource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resources r
+        LEFT JOIN user u ON r.user_id = u.id
+        <include refid="Common_Where_Clause"/>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                ORDER BY r.created_at DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计资源数量 -->
+    <select id="countResources" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM resources r
+        <include refid="Common_Where_Clause"/>
+    </select>
+
+    <!-- 根据ID查询资源 -->
+    <select id="selectById" resultType="com.sinon.bluecommunity.common.entity.Resource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resources r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.id = #{id}
+    </select>
+
+    <!-- 插入资源 -->
+    <insert id="insert" parameterType="com.sinon.bluecommunity.common.entity.Resource" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resources (
+            user_id, title, type, url_type, resource_url, description, content,
+            cover_url, downloads, views, likes, status
+        ) VALUES (
+            #{userId}, #{title}, #{type}, #{urlType}, #{resourceUrl}, #{description}, #{content},
+            #{coverUrl}, 0, 0, 0, #{status}
+        )
+    </insert>
+
+    <!-- 更新资源 -->
+    <update id="update" parameterType="com.sinon.bluecommunity.common.entity.Resource">
+        UPDATE resources
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="urlType != null">url_type = #{urlType},</if>
+            <if test="resourceUrl != null">resource_url = #{resourceUrl},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="status != null">status = #{status}</if>
+        </set>
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <!-- 删除资源 -->
+    <delete id="delete">
+        DELETE FROM resources
+        WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <!-- 批量更新资源状态 -->
+    <update id="batchUpdateStatus" parameterType="java.util.Map">
+        UPDATE resources 
+        SET status = #{status} 
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

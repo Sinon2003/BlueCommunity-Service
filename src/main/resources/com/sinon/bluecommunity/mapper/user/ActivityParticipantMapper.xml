@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.ActivityParticipantMapper">
+
+
+    <!-- 基础列定义 -->
+    <sql id="Base_Column_List">
+        id, activity_id, user_id, status, created_at, updated_at
+    </sql>
+
+    <!-- 获取活动的参与者列表 -->
+    <select id="listByActivityId" resultType="com.sinon.bluecommunity.common.entity.ActivityParticipant">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_participants
+        WHERE activity_id = #{activityId}
+        ORDER BY created_at
+    </select>
+
+    <!-- 获取活动的特定状态的参与者列表 -->
+    <select id="listByActivityIdAndStatus" resultType="com.sinon.bluecommunity.common.entity.ActivityParticipant">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_participants
+        WHERE activity_id = #{activityId}
+        AND status = #{status}
+        ORDER BY created_at
+    </select>
+
+    <!-- 分页获取活动的参与者列表 -->
+    <select id="listByPage" resultType="com.sinon.bluecommunity.common.entity.ActivityParticipant">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_participants
+        WHERE activity_id = #{activityId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        ORDER BY created_at
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 获取活动参与者的详细信息（包含用户信息） -->
+    <select id="listWithUserInfo" resultType="java.util.Map">
+        SELECT 
+            ap.id,
+            ap.activity_id,
+            ap.user_id,
+            ap.status,
+            ap.created_at,
+            ap.updated_at,
+            u.username,
+            u.nickname,
+            u.avatar_url
+        FROM activity_participants ap
+        LEFT JOIN user u ON ap.user_id = u.id
+        WHERE ap.activity_id = #{activityId}
+        <if test="status != null">
+            AND ap.status = #{status}
+        </if>
+        ORDER BY ap.created_at
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 更新参与状态 -->
+    <update id="updateStatus">
+        UPDATE activity_participants
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新用户在活动中的状态 -->
+    <update id="updateStatusByActivityAndUser">
+        UPDATE activity_participants
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE activity_id = #{activityId}
+        AND user_id = #{userId}
+    </update>
+
+    <!-- 批量更新参与状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE activity_participants
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 检查用户是否已参与活动 -->
+    <select id="getByActivityIdAndUserId" resultType="com.sinon.bluecommunity.common.entity.ActivityParticipant">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_participants
+        WHERE activity_id = #{activityId}
+        AND user_id = #{userId}
+    </select>
+
+    <!-- 统计活动的参与人数 -->
+    <select id="countParticipants" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM activity_participants
+        WHERE activity_id = #{activityId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 删除用户的活动参与记录 -->
+    <delete id="deleteByActivityIdAndUserId">
+        DELETE FROM activity_participants
+        WHERE activity_id = #{activityId}
+        AND user_id = #{userId}
+    </delete>
+
+    <!-- 获取用户参与的所有活动ID -->
+    <select id="getParticipatedActivityIds" resultType="java.lang.Long">
+        SELECT activity_id
+        FROM activity_participants
+        WHERE user_id = #{userId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 添加活动参与记录 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO activity_participants
+            (activity_id, user_id, status)
+        VALUES
+            (#{activityId}, #{userId}, #{status})
+    </insert>
+
+    <!-- 批量添加活动参与记录 -->
+    <insert id="batchInsert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO activity_participants
+            (activity_id, user_id, status)
+        VALUES
+        <foreach collection="participants" item="p" separator=",">
+            (#{p.activityId}, #{p.userId}, #{p.status})
+        </foreach>
+    </insert>
+
+    <!-- 获取用户参与的活动列表 -->
+    <select id="getUserParticipatedActivities" resultType="java.util.Map">
+        SELECT 
+            a.*,
+            ap.status as participant_status,
+            ap.created_at as join_time
+        FROM activities a
+        INNER JOIN activity_participants ap ON a.id = ap.activity_id
+        WHERE ap.user_id = #{userId}
+        <if test="status != null">
+            AND ap.status = #{status}
+        </if>
+        ORDER BY ap.created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计用户参与的活动数量 -->
+    <select id="countUserParticipatedActivities" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM activity_participants
+        WHERE user_id = #{userId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+</mapper>

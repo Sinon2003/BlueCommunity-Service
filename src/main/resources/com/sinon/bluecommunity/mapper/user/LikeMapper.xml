@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.LikeMapper">
+    
+    <!-- 添加点赞记录 -->
+    <insert id="insert">
+        INSERT INTO likes (user_id, target_id, target_type)
+        VALUES (#{userId}, #{targetId}, #{targetType})
+    </insert>
+    
+    <!-- 删除点赞记录 -->
+    <delete id="delete">
+        DELETE FROM likes
+        WHERE user_id = #{userId}
+          AND target_id = #{targetId}
+          AND target_type = #{targetType}
+    </delete>
+    
+    <!-- 检查点赞记录是否存在 -->
+    <select id="exists" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM likes
+        WHERE user_id = #{userId}
+          AND target_id = #{targetId}
+          AND target_type = #{targetType}
+    </select>
+    
+    <!-- 获取目标的点赞数 -->
+    <select id="countByTarget" resultType="int">
+        SELECT COUNT(1)
+        FROM likes
+        WHERE target_id = #{targetId}
+          AND target_type = #{targetType}
+    </select>
+    
+    <!-- 获取用户的点赞数 -->
+    <select id="countByUser" resultType="int">
+        SELECT COUNT(1)
+        FROM likes
+        WHERE user_id = #{userId}
+        <if test="targetType != null">
+            AND target_type = #{targetType}
+        </if>
+    </select>
+    
+    <!-- 批量删除指定目标的点赞记录 -->
+    <delete id="deleteByTarget">
+        DELETE FROM likes
+        WHERE target_id = #{targetId}
+          AND target_type = #{targetType}
+    </delete>
+    
+    <!-- 批量删除指定用户的点赞记录 -->
+    <delete id="deleteByUser">
+        DELETE FROM likes
+        WHERE user_id = #{userId}
+    </delete>
+    
+</mapper>

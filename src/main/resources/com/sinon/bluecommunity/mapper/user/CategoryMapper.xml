@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.CategoryMapper">
+    <!-- 插入分类 -->
+    <insert id="insert" parameterType="com.sinon.bluecommunity.common.entity.Category" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO category (name, description, status, sort_order, icon_url)
+        VALUES (#{name}, #{description}, #{status}, #{sortOrder}, #{iconUrl})
+    </insert>
+
+    <!-- 更新分类 -->
+    <update id="update" parameterType="com.sinon.bluecommunity.common.entity.Category">
+        UPDATE category
+        SET name = #{name},
+            description = #{description},
+            status = #{status},
+            sort_order = #{sortOrder},
+            icon_url = #{iconUrl}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量更新分类状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE category
+        SET status = #{status}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 批量更新分类排序 -->
+    <update id="batchUpdateSortOrder">
+        <foreach collection="categories" item="item" separator=";">
+            UPDATE category
+            SET sort_order = #{item.sortOrder}
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+
+    <!-- 获取分类及其帖子数量 -->
+    <select id="listWithTopicCount" resultType="com.sinon.bluecommunity.common.entity.Category">
+        SELECT 
+            c.*,
+            COUNT(t.id) as topic_count
+        FROM category c
+        LEFT JOIN topics t ON c.id = t.category_id AND t.status = 1
+        WHERE c.status = 1
+        GROUP BY c.id, c.sort_order
+        ORDER BY c.sort_order
+    </select>
+</mapper>

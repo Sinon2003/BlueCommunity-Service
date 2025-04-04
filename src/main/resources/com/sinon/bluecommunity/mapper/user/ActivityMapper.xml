@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.ActivityMapper">
+
+    <sql id="Base_Column_List">
+        a.id, a.user_id, a.title, a.type, a.description, a.cover_url, a.start_time, a.end_time, 
+        a.location_type, a.location, a.max_participants, a.current_participants, a.notice,
+        a.status, a.views, a.likes, a.created_at, a.updated_at, u.username
+    </sql>
+
+    <!-- 公共的查询条件 -->
+    <sql id="Common_Where_Clause">
+        <where>
+            <if test="userId != null">
+                AND a.user_id = #{userId}
+            </if>
+            <if test="status != null">
+                AND a.status = #{status}
+            </if>
+            <if test="type != null and type != ''">
+                AND a.type = #{type}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    a.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.description LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.location LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="startTimeBegin != null">
+                AND a.start_time >= #{startTimeBegin}
+            </if>
+            <if test="startTimeEnd != null">
+                AND a.start_time &lt;= #{startTimeEnd}
+            </if>
+            <if test="endTimeBegin != null">
+                AND a.end_time >= #{endTimeBegin}
+            </if>
+            <if test="endTimeEnd != null">
+                AND a.end_time &lt;= #{endTimeEnd}
+            </if>
+            <if test="locationType != null and locationType != ''">
+                AND a.location_type = #{locationType}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 获取活动列表 -->
+    <select id="getActivityList" resultType="com.sinon.bluecommunity.common.entity.Activity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activities a
+        LEFT JOIN user u ON a.user_id = u.id
+        <include refid="Common_Where_Clause"/>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.created_at DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and size != null">
+            LIMIT #{size} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计活动数量 -->
+    <select id="countActivities" resultType="int">
+        SELECT COUNT(*)
+        FROM activities
+        <include refid="Common_Where_Clause"/>
+    </select>
+
+    <!-- 批量插入活动参与者 -->
+    <insert id="batchInsertParticipants">
+        INSERT INTO activity_participants (activity_id, user_id, status)
+        VALUES
+        <foreach collection="participants" item="participant" separator=",">
+            (#{participant.activityId}, #{participant.userId}, #{participant.status})
+        </foreach>
+    </insert>
+
+    <!-- 批量更新活动状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE activities
+        SET status = #{status}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </update>
+
+    <!-- 获取指定时间范围内的活动统计 -->
+    <select id="getActivityStats" resultType="map">
+        SELECT
+            COUNT(*) as total_count,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as active_count,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as ended_count,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as cancelled_count,
+            SUM(views) as total_views,
+            SUM(likes) as total_likes,
+            SUM(current_participants) as total_participants,
+            COUNT(DISTINCT user_id) as total_organizers
+        FROM activities
+        <where>
+            <if test="startTime != null">
+                AND created_at >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND created_at &lt;= #{endTime}
+            </if>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+        </where>
+    </select>
+
+    <!-- 获取热门活动 -->
+    <select id="getHotActivities" resultType="com.sinon.bluecommunity.common.entity.Activity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activities a
+        LEFT JOIN user u ON a.user_id = u.id
+        WHERE a.status = 1
+        AND a.end_time > NOW()
+        <if test="type != null and type != ''">
+            AND a.type = #{type}
+        </if>
+        ORDER BY
+        <choose>
+            <when test="orderBy == 'participants'">
+                a.current_participants DESC
+            </when>
+            <when test="orderBy == 'views'">
+                a.views DESC
+            </when>
+            <when test="orderBy == 'likes'">
+                a.likes DESC
+            </when>
+            <otherwise>
+                (a.current_participants * 0.5 + a.views * 0.3 + a.likes * 0.2) DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取用户的活动统计信息 -->
+    <select id="getUserActivityStats" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM activities WHERE user_id = #{userId}) as organized_count,
+            (SELECT COUNT(*) FROM activity_participants WHERE user_id = #{userId}) as participated_count,
+            (SELECT COUNT(*) FROM activities 
+             WHERE user_id = #{userId} 
+             AND end_time > NOW() 
+             AND status = 1) as ongoing_organized_count,
+            (SELECT COUNT(*) FROM activity_participants ap
+             INNER JOIN activities a ON ap.activity_id = a.id
+             WHERE ap.user_id = #{userId}
+             AND a.end_time > NOW()
+             AND a.status = 1) as ongoing_participated_count
+    </select>
+
+    <!-- 获取活动参与者的详细信息 -->
+    <select id="getActivityParticipantsWithUser" resultType="map">
+        SELECT 
+            ap.id as participant_id,
+            ap.status as participant_status,
+            ap.created_at as join_time,
+            u.id as user_id,
+            u.username,
+            u.nickname,
+            u.avatar_url
+        FROM activity_participants ap
+        INNER JOIN user u ON ap.user_id = u.id
+        WHERE ap.activity_id = #{activityId}
+        <if test="status != null">
+            AND ap.status = #{status}
+        </if>
+        ORDER BY ap.created_at
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+</mapper>

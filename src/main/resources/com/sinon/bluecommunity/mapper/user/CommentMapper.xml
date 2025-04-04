@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.CommentMapper">
+
+    <!-- 根据条件获取评论列表 -->
+    <select id="getCommentList" resultType="com.sinon.bluecommunity.common.entity.Comment">
+        SELECT 
+            c.*,
+            u.username, u.nickname, u.avatar_url,
+            ru.username as reply_username, ru.nickname as reply_nickname,
+            COALESCE(t.title, a.title, r.title) as title,
+            IFNULL(l.like_count, 0) as like_count
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        LEFT JOIN user ru ON c.reply_user_id = ru.id
+        LEFT JOIN topics t ON t.id = c.target_id AND c.target_type = 'topic'
+        LEFT JOIN activities a ON a.id = c.target_id AND c.target_type = 'activity'
+        LEFT JOIN resources r ON r.id = c.target_id AND c.target_type = 'resource'
+        LEFT JOIN (
+            SELECT target_id, COUNT(*) as like_count
+            FROM likes 
+            WHERE target_type = 'comment'
+            GROUP BY target_id
+        ) l ON c.id = l.target_id
+        <where>
+            <if test="targetId != null">
+                AND c.target_id = #{targetId}
+            </if>
+            <if test="targetType != null and targetType != ''">
+                AND c.target_type = #{targetType}
+            </if>
+            <if test="userId != null">
+                AND c.user_id = #{userId}
+            </if>
+            <if test="parentId != null">
+                AND c.parent_id = #{parentId}
+            </if>
+            <if test="level != null">
+                AND c.level = #{level}
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy == 'hot'">
+                ORDER BY like_count DESC, c.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY c.created_at DESC
+            </otherwise>
+        </choose>
+        <if test="page != null and size != null">
+            LIMIT #{size} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计评论数量 -->
+    <select id="countComments" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM comment c
+        <where>
+            <if test="targetId != null">
+                AND c.target_id = #{targetId}
+            </if>
+            <if test="targetType != null and targetType != ''">
+                AND c.target_type = #{targetType}
+            </if>
+            <if test="userId != null">
+                AND c.user_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 批量删除评论 -->
+    <delete id="batchDelete">
+        DELETE FROM comment WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 统计用户的评论数 -->
+    <select id="countByUser" resultType="int">
+        SELECT COUNT(*)
+        FROM comment
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 获取用户最近的评论列表 -->
+    <select id="getRecentComments" resultType="java.util.Map">
+        SELECT
+            c.id,
+            c.content,
+            c.created_at,
+            c.target_id,
+            c.target_type,
+            CASE c.target_type
+                WHEN 'topic' THEN (SELECT title FROM topics WHERE id = c.target_id)
+                WHEN 'activity' THEN (SELECT title FROM activities WHERE id = c.target_id)
+                ELSE NULL
+                END as target_title
+        FROM comment c
+        WHERE c.user_id = #{userId}
+        ORDER BY c.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

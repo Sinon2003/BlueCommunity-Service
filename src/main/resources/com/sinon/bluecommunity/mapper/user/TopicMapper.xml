@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinon.bluecommunity.user.mapper.TopicMapper">
+
+
+    <!-- 统计符合条件的话题总数 -->
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM topics
+        <where>
+            <if test="userId != null">
+                user_id = #{userId}
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <!-- 插入话题 -->
+    <insert id="insert" parameterType="com.sinon.bluecommunity.common.entity.Topic" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO topics (
+            user_id, title, content, cover_url, category_id, status,
+            views, likes, comments, is_pinned,
+            created_at, updated_at
+        ) VALUES (
+            #{userId}, #{title}, #{content}, #{coverUrl}, #{categoryId}, #{status},
+            0, 0, 0, 0,
+            NOW(), NOW()
+        )
+    </insert>
+    
+    <!-- 更新话题 -->
+    <update id="update" parameterType="com.sinon.bluecommunity.common.entity.Topic">
+        UPDATE topics
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="isPinned != null">is_pinned = #{isPinned},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 根据ID查询话题 -->
+    <select id="selectById" resultType="com.sinon.bluecommunity.common.entity.Topic">
+        SELECT *
+        FROM topics
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 条件查询话题列表 -->
+    <select id="selectList" resultType="com.sinon.bluecommunity.common.entity.Topic">
+        SELECT *
+        FROM topics
+        <where>
+            <if test="userId != null">
+                user_id = #{userId}
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy == 'views'">
+                ORDER BY views DESC
+            </when>
+            <when test="orderBy != null and orderBy == 'likes'">
+                ORDER BY likes DESC
+            </when>
+            <when test="orderBy != null and orderBy == 'comments'">
+                ORDER BY comments DESC
+            </when>
+            <otherwise>
+                ORDER BY is_pinned DESC, created_at DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+    
+    <!-- 统计帖子数量 -->
+    <select id="countPosts" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM topics
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+    
+    <!-- 更新话题状态 -->
+    <update id="updateStatus">
+        UPDATE topics
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 更新话题置顶状态 -->
+    <update id="updatePinned">
+        UPDATE topics
+        SET is_pinned = #{isPinned},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 增加浏览量 -->
+    <update id="incrementViews">
+        UPDATE topics
+        SET views = views + 1
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 更新点赞数 -->
+    <update id="updateLikes">
+        UPDATE topics
+        SET likes = likes + #{increment}
+        WHERE id = #{id} 
+        <if test="increment &lt; 0">
+            AND likes > 0
+        </if>
+    </update>
+    
+    <!-- 更新评论数 -->
+    <update id="updateComments">
+        UPDATE topics
+        SET comments = comments + #{increment}
+        WHERE id = #{id}
+        <if test="increment &lt; 0">
+            AND comments > 0
+        </if>
+    </update>
+    
+    <!-- 批量查询话题 -->
+    <select id="selectByIds" resultType="com.sinon.bluecommunity.common.entity.Topic">
+        SELECT *
+        FROM topics
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    
+    <!-- 统计用户的话题数 -->
+    <select id="countByUser" resultType="int">
+        SELECT COUNT(*)
+        FROM topics
+        WHERE user_id = #{userId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+    
+    <!-- 统计分类的话题数 -->
+    <select id="countByCategory" resultType="int">
+        SELECT COUNT(*)
+        FROM topics
+        WHERE category_id = #{categoryId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 批量更新帖子状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE topics 
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>
