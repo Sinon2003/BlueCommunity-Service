@@ -3,6 +3,7 @@ package com.sinon.bluecommunity.user.service.serviceImpl;
 import com.sinon.bluecommunity.common.entity.Like;
 import com.sinon.bluecommunity.common.exception.BusinessException;
 import com.sinon.bluecommunity.user.mapper.LikeMapper;
+import com.sinon.bluecommunity.user.mapper.TopicMapper;
 import com.sinon.bluecommunity.user.service.LikeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,6 +24,9 @@ public class LikeServiceImpl implements LikeService {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private TopicMapper topicMapper;
 
     // Redis key 前缀
     private static final String LIKE_COUNT_KEY = "like:count:";
@@ -46,6 +50,10 @@ public class LikeServiceImpl implements LikeService {
 
         // 添加点赞记录
         likeMapper.insert(userId, targetId, targetType);
+
+        // 同步进主帖子数据库
+        topicMapper.updateLikes(targetId, 1);
+
 
         // 更新缓存
         String countKey = LIKE_COUNT_KEY + targetType + ":" + targetId;

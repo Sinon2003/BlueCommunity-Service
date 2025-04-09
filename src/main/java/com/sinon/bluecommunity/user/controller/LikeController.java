@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 点赞控制器
@@ -30,7 +31,8 @@ public class LikeController {
             @RequestParam Long targetId,
             @Parameter(description = "目标类型(topic/activity/resource/comment)", required = true)
             @RequestParam String targetType) {
-        Long userId = ThreadLocalUtil.get();
+        Map<String, Object> claims = ThreadLocalUtil.get();
+        Long userId = Long.valueOf(claims.get("userId").toString());
         likeService.like(userId, targetId, targetType);
         return Result.success();
     }
@@ -42,7 +44,8 @@ public class LikeController {
             @RequestParam Long targetId,
             @Parameter(description = "目标类型", required = true)
             @RequestParam String targetType) {
-        Long userId = ThreadLocalUtil.get();
+        Map<String, Object> claims = ThreadLocalUtil.get();
+        Long userId = Long.valueOf(claims.get("userId").toString());
         likeService.unlike(userId, targetId, targetType);
         return Result.success();
     }
@@ -54,7 +57,8 @@ public class LikeController {
             @RequestParam Long targetId,
             @Parameter(description = "目标类型", required = true)
             @RequestParam String targetType) {
-        Long userId = ThreadLocalUtil.get();
+        Map<String, Object> claims = ThreadLocalUtil.get();
+        Long userId = Long.valueOf(claims.get("userId").toString());
         boolean hasLiked = likeService.hasLiked(userId, targetId, targetType);
         return Result.success(hasLiked);
     }
@@ -79,7 +83,8 @@ public class LikeController {
             @RequestParam(defaultValue = "1") Integer page,
             @Parameter(description = "每页大小", required = false)
             @RequestParam(defaultValue = "10") Integer size) {
-        Long userId = ThreadLocalUtil.get();
+        Map<String, Object> claims = ThreadLocalUtil.get();
+        Long userId = Long.valueOf(claims.get("userId").toString());
         List<Like> likes = likeService.getUserLikes(userId, targetType, page, size);
         return Result.success(likes);
     }
