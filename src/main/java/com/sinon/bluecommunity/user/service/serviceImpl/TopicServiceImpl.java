@@ -552,10 +552,17 @@ public class TopicServiceImpl implements TopicService {
         try {
             // 计算偏移量
             int offset = (page - 1) * size;
-            
-            // 获取总记录数
-            long total = topicMapper.countHotTopics(categoryId, days);
-            
+
+            long total = 0;
+
+            if (categoryId == null) {
+                // 如果没有分类ID，则不进行分类筛选
+                // 获取总记录数
+                total = topicMapper.countHotTopics(categoryId, days);
+            } else {
+                total = topicMapper.countHotTopics(categoryId, days);
+            }
+
             // 如果没有记录，直接返回空列表
             if (total == 0) {
                 return new PageVO<>(new ArrayList<>(), 0L);

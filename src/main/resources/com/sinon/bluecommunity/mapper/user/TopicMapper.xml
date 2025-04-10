@@ -240,14 +240,13 @@
     <select id="countHotTopics" resultType="long">
         SELECT COUNT(*)
         FROM topics
-        <where>
-            status = 1 <!-- 只查询正常状态的帖子 -->
-            <if test="categoryId != null">
-                AND category_id = #{categoryId}
-            </if>
-            <if test="days != null and days > 0">
-                AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
-            </if>
-        </where>
+        WHERE status = 1 <!-- 只查询正常状态的帖子 -->
+        <if test="categoryId != null">
+            AND category_id = #{categoryId}
+            <!-- 当categoryId为空时，自动统计所有分类的帖子 -->
+        </if>
+        <if test="days != null and days > 0">
+            AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
     </select>
 </mapper>

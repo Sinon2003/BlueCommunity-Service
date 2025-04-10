@@ -7,6 +7,7 @@ import com.sinon.bluecommunity.common.vo.PageVO;
 import com.sinon.bluecommunity.common.vo.Result;
 import com.sinon.bluecommunity.common.vo.TopicVO;
 import com.sinon.bluecommunity.user.service.TopicService;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -167,10 +168,15 @@ public class TopicController {
      */
     @GetMapping("/hot")
     public Result<PageVO<TopicVO>> getHotTopics(
+            @Parameter(description = "分类ID", required = false)
             @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "时间范围,最近 n 天", required = false)
             @RequestParam(required = false) Integer days,
+            @Parameter(description = "热度计算方式", required = false)
             @RequestParam(required = false) String hotType,
+            @Parameter(description = "页码", required = false)
             @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页大小", required = false)
             @RequestParam(defaultValue = "10") Integer size) {
         PageVO<TopicVO> topics = topicService.getHotTopics(categoryId, days, hotType, page, size);
         return Result.success(topics);
