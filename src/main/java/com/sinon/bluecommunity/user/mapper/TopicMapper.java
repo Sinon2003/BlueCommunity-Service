@@ -136,4 +136,30 @@ public interface TopicMapper {
     long countHotTopics(
         @Param("categoryId") Long categoryId,
         @Param("days") Integer days);
+    
+    /**
+     * 根据标签查询话题列表
+     * 
+     * @param tagId 标签ID
+     * @param status 话题状态，默认为1（正常）
+     * @param offset 分页偏移量
+     * @param size 分页大小
+     * @param orderBy 排序方式：created_at(创建时间), views(浏览量), likes(点赞数), comments(评论数)
+     * @return 符合条件的话题列表
+     */
+    List<Topic> selectByTag(
+        @Param("tagId") Long tagId, 
+        @Param("status") Integer status, 
+        @Param("offset") Integer offset, 
+        @Param("size") Integer size, 
+        @Param("orderBy") String orderBy);
+    
+    /**
+     * 统计标签相关的话题总数
+     * 
+     * @param tagId 标签ID
+     * @param status 话题状态
+     * @return 总数
+     */
+    long countByTag(@Param("tagId") Long tagId, @Param("status") Integer status);
 }

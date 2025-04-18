@@ -249,4 +249,56 @@
             AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
         </if>
     </select>
+    
+    <!-- 根据标签查询话题列表 -->
+    <select id="selectByTag" resultType="com.sinon.bluecommunity.common.entity.Topic">
+        SELECT t.*
+        FROM topics t
+        INNER JOIN tag_relations tr ON t.id = tr.target_id AND tr.target_type = 'topic'
+        <where>
+            tr.tag_id = #{tagId}
+            <if test="status != null">
+                AND t.status = #{status}
+            </if>
+            <if test="status == null">
+                AND t.status = 1 <!-- 默认只查询正常状态的帖子 -->
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy == 'views'">
+                ORDER BY t.views DESC
+            </when>
+            <when test="orderBy != null and orderBy == 'likes'">
+                ORDER BY t.likes DESC
+            </when>
+            <when test="orderBy != null and orderBy == 'comments'">
+                ORDER BY t.comments DESC
+            </when>
+            <when test="orderBy != null and orderBy == 'created_at'">
+                ORDER BY t.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY t.is_pinned DESC, t.created_at DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+    
+    <!-- 统计标签相关的话题总数 -->
+    <select id="countByTag" resultType="long">
+        SELECT COUNT(*)
+        FROM topics t
+        INNER JOIN tag_relations tr ON t.id = tr.target_id AND tr.target_type = 'topic'
+        <where>
+            tr.tag_id = #{tagId}
+            <if test="status != null">
+                AND t.status = #{status}
+            </if>
+            <if test="status == null">
+                AND t.status = 1 <!-- 默认只查询正常状态的帖子 -->
+            </if>
+        </where>
+    </select>
 </mapper>

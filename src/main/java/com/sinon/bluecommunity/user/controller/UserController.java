@@ -184,7 +184,7 @@ public class UserController {
      * @param request 包含旧密码和新密码
      * @return 重置结果
      */
-    @PatchMapping("/resetPassword")
+    @PutMapping("/resetPassword")
     public Result<?> resetPassword(@RequestBody Map<@NotBlank(message = "不能为空") String, @NotBlank(message = "不能为空") String> request) {
         Map<String, Object> claims = ThreadLocalUtil.get();
         if (claims == null || claims.get("userId") == null) {

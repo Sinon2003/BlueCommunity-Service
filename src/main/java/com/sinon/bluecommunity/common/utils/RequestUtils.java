@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 
+// 暂时弃用
 /**
  * 请求工具类
  */

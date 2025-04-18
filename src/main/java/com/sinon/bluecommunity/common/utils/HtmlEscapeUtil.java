@@ -2,6 +2,8 @@ package com.sinon.bluecommunity.common.utils;
 
 import org.springframework.web.util.HtmlUtils;
 
+// 暂时弃用
+
 /**
  * HTML转义工具类
  */

@@ -4,7 +4,7 @@ package com.sinon.bluecommunity.common.utils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-
+// 暂时弃用
 
 public class Md5Util {
 

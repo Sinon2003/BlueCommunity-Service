@@ -1,5 +1,7 @@
 package com.sinon.bluecommunity.common.constant;
 
+// 暂时没用到
+
 /**
  * 安全相关常量
  */

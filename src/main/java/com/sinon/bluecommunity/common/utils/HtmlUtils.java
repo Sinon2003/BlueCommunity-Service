@@ -4,6 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 
+
+// 暂时弃用
 /**
  * HTML工具类，用于XSS过滤
  */
